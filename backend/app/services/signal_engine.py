@@ -143,6 +143,7 @@ logger = get_logger("signal_engine")
 
 # ─── Nombres de condiciones (para log y auditoría) ─────────────────
 COND_EMA_CROSS = "ema_cross"
+COND_EMA_TREND = "ema_trend"
 COND_RSI_REVERSAL = "rsi_reversal"
 COND_SR_BOUNCE = "sr_bounce"
 COND_BREAKOUT = "breakout"
@@ -297,6 +298,9 @@ class SignalEngine:
         self._check_ema_cross(
             ema_9, ema_21, prev, buy_conditions, sell_conditions,
         )
+        self._check_ema_trend(
+            ema_9, ema_21, buy_conditions, sell_conditions,
+        )
         self._check_rsi_reversal(
             rsi, prev, buy_conditions, sell_conditions,
         )
@@ -318,6 +322,18 @@ class SignalEngine:
         # ── 5. Actualizar estado previo (ANTES de return) ──────────
         self._prev_indicators[symbol] = indicators
 
+        # ── DEBUG: mostrar evaluación de condiciones cada N velas ──
+        total_conds = len(buy_conditions) + len(sell_conditions)
+        if total_conds > 0 or self._total_evaluated % 50 == 0:
+            logger.info(
+                "🔍 [%s] eval #%d | BUY=%s SELL=%s | "
+                "EMA9=%.5f EMA21=%.5f RSI=%.2f | S=%.5f R=%.5f",
+                symbol, self._total_evaluated,
+                buy_conditions or "[]", sell_conditions or "[]",
+                ema_9, ema_21, rsi,
+                support or 0.0, resistance or 0.0,
+            )
+
         # ── 6. Determinar dirección con suficientes confirmaciones ──
         signal_type: Optional[str] = None
         conditions: list[str] = []
@@ -330,6 +346,13 @@ class SignalEngine:
             conditions = sell_conditions
         else:
             # Sin suficientes confirmaciones → NEUTRAL → sin señal
+            if total_conds > 0:
+                logger.info(
+                    "⏸️  [%s] %d condicion(es) insuficientes (min=%d) "
+                    "BUY=%s SELL=%s",
+                    symbol, total_conds, self._min_confirmations,
+                    buy_conditions, sell_conditions,
+                )
             return None
 
         # ── 7. Gestión de riesgo → Signal o None ───────────────────
@@ -411,6 +434,21 @@ class SignalEngine:
         # Cruce bajista: de positivo a negativo
         elif prev_diff > 0 and curr_diff < 0:
             sell_conds.append(COND_EMA_CROSS)
+
+    # ════════════════════════════════════════════════════════════════
+    #  CONDICIÓN 1b: EMA TREND ALIGNMENT (más suave que cruce)
+    # ════════════════════════════════════════════════════════════════
+    def _check_ema_trend(self, ema_9, ema_21, buy_conds, sell_conds):
+        """
+        Alineación de tendencia EMA — condición más suave que el cruce.
+        Se activa cuando EMA9 está alineada con la dirección de tendencia:
+          - BUY:  EMA9 > EMA21 (alineación alcista)
+          - SELL: EMA9 < EMA21 (alineación bajista)
+        """
+        if ema_9 > ema_21:
+            buy_conds.append(COND_EMA_TREND)
+        elif ema_9 < ema_21:
+            sell_conds.append(COND_EMA_TREND)
 
     # ════════════════════════════════════════════════════════════════
     #  CONDICIÓN 2: RSI CON GIRO

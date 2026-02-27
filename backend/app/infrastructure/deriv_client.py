@@ -196,9 +196,12 @@ class DerivClient:
         Parsea cada mensaje y publica ticks al EventBus.
         Solo procesa mensajes de tipo 'tick' – ignora el resto.
         """
+        msg_count = 0
         async for raw_msg in ws:
             if not self._running:
                 break
+
+            msg_count += 1
 
             try:
                 data = json.loads(raw_msg)
@@ -206,13 +209,23 @@ class DerivClient:
                 logger.warning("Mensaje no-JSON recibido, ignorando")
                 continue
 
+            # Log primeros mensajes para diagnóstico
+            if msg_count <= 10:
+                msg_type = data.get("msg_type", "?")
+                keys = list(data.keys())[:5]
+                logger.info(
+                    "📥 Deriv msg #%d tipo=%s keys=%s",
+                    msg_count, msg_type, keys,
+                )
+
             # ── Manejo de errores del API ──
             if "error" in data:
                 error = data["error"]
                 logger.error(
-                    "Error de Deriv API [%s]: %s",
+                    "Error de Deriv API [%s]: %s | echo_req=%s",
                     error.get("code", "?"),
                     error.get("message", "sin detalle"),
+                    str(data.get("echo_req", {}))[:200],
                 )
                 continue
 

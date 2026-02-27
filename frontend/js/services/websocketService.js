@@ -102,18 +102,30 @@ const WebSocketService = (() => {
 
   // ── Handlers ──────────────────────────────────────────────────
 
+  /** @type {number|null} Intervalo de ping keepalive */
+  let _pingInterval = null;
+
   function _handleOpen() {
     console.log('[WS] Conectado ✓');
     _connecting = false;
     _reconnectDelay = 1000; // resetear backoff
     _clearReconnect();
     StateManager.set('connectionStatus', 'connected');
+
+    // Iniciar ping keepalive cada 25s para evitar timeout
+    _clearPing();
+    _pingInterval = setInterval(() => {
+      if (_ws && _ws.readyState === WebSocket.OPEN) {
+        try { _ws.send(JSON.stringify({ type: 'ping' })); } catch (e) { /* ok */ }
+      }
+    }, 25000);
   }
 
   function _handleClose(event) {
     console.warn(`[WS] Desconectado (code=${event.code}, reason=${event.reason})`);
     _connecting = false;
     _ws = null;
+    _clearPing();
     StateManager.set('connectionStatus', 'disconnected');
     _scheduleReconnect();
   }
@@ -134,6 +146,9 @@ const WebSocketService = (() => {
     try {
       const msg = JSON.parse(event.data);
       if (!msg.type || msg.data === undefined) return;
+
+      // Ignorar ping/pong del keepalive
+      if (msg.type === 'ping' || msg.type === 'pong') return;
 
       // Publicar en EventBus para que los componentes consuman
       EventBus.emit(`ws:${msg.type}`, msg.data);
@@ -161,6 +176,13 @@ const WebSocketService = (() => {
     if (_reconnectTimer) {
       clearTimeout(_reconnectTimer);
       _reconnectTimer = null;
+    }
+  }
+
+  function _clearPing() {
+    if (_pingInterval) {
+      clearInterval(_pingInterval);
+      _pingInterval = null;
     }
   }
 

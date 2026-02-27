@@ -354,7 +354,7 @@ class SupportResistanceService:
         recent = list(candles_buffer)[-n:]
 
         if len(recent) < n:
-            return True  # Sin suficientes datos → conservador → no operar
+            return False  # Sin suficientes datos → permitir señales, no bloquear
 
         highs = [c.high for c in recent]
         lows = [c.low for c in recent]

@@ -95,20 +95,44 @@ async def market_stream(websocket: WebSocket) -> None:
     El frontend se conecta aquí para recibir ticks, velas, indicadores
     y señales en tiempo real. El broadcast lo maneja WebSocketManager -
     este handler solo gestiona el ciclo de vida de la conexión.
+    
+    KEEPALIVE: Envía ping cada 20s para evitar timeout en proxies/NAT.
+    El frontend responde con pong (automático del browser).
     """
+    import asyncio
+
     if _ws_manager is None:
         await websocket.close(code=1011, reason="Server not ready")
         return
 
     await _ws_manager.connect(websocket)
+
+    async def _ping_loop():
+        """Enviar ping periódico para mantener la conexión viva."""
+        try:
+            while True:
+                await asyncio.sleep(20)
+                try:
+                    await websocket.send_json({"type": "ping", "data": {}})
+                except Exception:
+                    break
+        except asyncio.CancelledError:
+            pass
+
+    ping_task = asyncio.create_task(_ping_loop(), name="ws-ping")
     try:
         while True:
             try:
                 data = await websocket.receive_text()
+                # Responder pong si recibimos ping del frontend
+                if data == '{"type":"ping"}':
+                    await websocket.send_json({"type": "pong", "data": {}})
+                    continue
                 logger.debug("Mensaje de cliente WS: %s", data[:100])
             except WebSocketDisconnect:
                 break
     finally:
+        ping_task.cancel()
         _ws_manager.disconnect(websocket)
 
 
