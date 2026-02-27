@@ -36,10 +36,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from backend.app.core.logging import setup_logging, get_logger
-from backend.app.core.settings import settings
+from backend.shared.logging.logger import setup_logging, get_logger
+from backend.shared.config.settings import settings
 from backend.app.infrastructure.database import db_manager
-from backend.app.api.routes import router, init_routes
+from backend.presentation.api.routes import router, init_routes
 from backend.container import get_container, init_container
 
 # ─── Logging ────────────────────────────────────────────────────────────

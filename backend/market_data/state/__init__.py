@@ -1,0 +1,1 @@
+"""Market data state management."""

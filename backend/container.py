@@ -29,22 +29,22 @@ from backend.application.ports.ml_predictor import IMLPredictor
 # Shared
 from backend.shared.config.settings import Settings
 
-# Legacy imports (para transición)
+# Legacy imports (para transición) - Ahora usando bounded contexts
 if TYPE_CHECKING:
-    from backend.app.infrastructure.event_bus import EventBus
-    from backend.app.state.market_state import MarketStateManager
-    from backend.app.state.indicator_state import IndicatorStateManager
-    from backend.app.state.trade_state import TradeStateManager
-    from backend.app.services.candle_builder import CandleBuilder
-    from backend.app.services.indicator_service import IndicatorService
-    from backend.app.services.support_resistance_service import SupportResistanceService
-    from backend.app.services.signal_engine import SignalEngine
-    from backend.app.services.trade_simulator import TradeSimulator
-    from backend.app.services.stats_engine import StatsEngine
-    from backend.app.services.timeframe_aggregator import TimeframeAggregator
-    from backend.app.infrastructure.deriv_client import DerivClient
+    from backend.market_data.infrastructure.event_bus import EventBus
+    from backend.market_data.state.market_state import MarketStateManager
+    from backend.market_data.state.indicator_state import IndicatorStateManager
+    from backend.trading.state.trade_state import TradeStateManager
+    from backend.market_data.services.candle_builder import CandleBuilder
+    from backend.market_data.services.indicator_service import IndicatorService
+    from backend.market_data.services.sr_service import SupportResistanceService
+    from backend.trading.services.signal_engine import SignalEngine
+    from backend.trading.services.trade_simulator import TradeSimulator
+    from backend.analytics.services.stats_engine import StatsEngine
+    from backend.market_data.services.tf_aggregator import TimeframeAggregator
+    from backend.market_data.infrastructure.deriv_client import DerivClient
     from backend.app.application.process_tick_usecase import ProcessTickUseCase as LegacyProcessTickUseCase
-    from backend.app.api.websocket_manager import WebSocketManager
+    from backend.presentation.websocket.websocket_manager import WebSocketManager
 
 
 @dataclass
@@ -221,7 +221,7 @@ class Container:
     def event_bus(self) -> "EventBus":
         """Event bus para comunicación entre componentes."""
         if self._event_bus is None:
-            from backend.app.infrastructure.event_bus import EventBus
+            from backend.market_data.infrastructure.event_bus import EventBus
             self._event_bus = EventBus(
                 max_queue_size=self.legacy_settings.event_bus_max_queue_size
             )
@@ -231,7 +231,7 @@ class Container:
     def market_state(self) -> "MarketStateManager":
         """Estado del mercado (velas, precios)."""
         if self._market_state is None:
-            from backend.app.state.market_state import MarketStateManager
+            from backend.market_data.state.market_state import MarketStateManager
             self._market_state = MarketStateManager()
         return self._market_state
     
@@ -239,7 +239,7 @@ class Container:
     def indicator_state(self) -> "IndicatorStateManager":
         """Estado de indicadores técnicos."""
         if self._indicator_state is None:
-            from backend.app.state.indicator_state import IndicatorStateManager
+            from backend.market_data.state.indicator_state import IndicatorStateManager
             self._indicator_state = IndicatorStateManager()
         return self._indicator_state
     
@@ -247,7 +247,7 @@ class Container:
     def trade_state(self) -> "TradeStateManager":
         """Estado de trades simulados."""
         if self._trade_state is None:
-            from backend.app.state.trade_state import TradeStateManager
+            from backend.trading.state.trade_state import TradeStateManager
             self._trade_state = TradeStateManager()
         return self._trade_state
     
@@ -255,7 +255,7 @@ class Container:
     def candle_builder(self) -> "CandleBuilder":
         """Constructor de velas desde ticks."""
         if self._candle_builder is None:
-            from backend.app.services.candle_builder import CandleBuilder
+            from backend.market_data.services.candle_builder import CandleBuilder
             self._candle_builder = CandleBuilder(
                 interval=self.legacy_settings.candle_interval_seconds
             )
@@ -265,7 +265,7 @@ class Container:
     def indicator_service(self) -> "IndicatorService":
         """Servicio de cálculo de indicadores."""
         if self._indicator_service is None:
-            from backend.app.services.indicator_service import IndicatorService
+            from backend.market_data.services.indicator_service import IndicatorService
             self._indicator_service = IndicatorService(
                 state_manager=self.indicator_state
             )
@@ -275,7 +275,7 @@ class Container:
     def sr_service(self) -> "SupportResistanceService":
         """Servicio de soportes y resistencias."""
         if self._sr_service is None:
-            from backend.app.services.support_resistance_service import SupportResistanceService
+            from backend.market_data.services.sr_service import SupportResistanceService
             self._sr_service = SupportResistanceService(
                 max_levels=self.legacy_settings.signal_sr_max_levels,
                 sr_tolerance_pct=self.legacy_settings.signal_sr_tolerance_pct,
@@ -289,7 +289,7 @@ class Container:
     def signal_engine(self) -> "SignalEngine":
         """Motor de generación de señales."""
         if self._signal_engine is None:
-            from backend.app.services.signal_engine import SignalEngine
+            from backend.trading.services.signal_engine import SignalEngine
             self._signal_engine = SignalEngine(
                 sr_service=self.sr_service,
                 min_confirmations=self.legacy_settings.signal_min_confirmations,
@@ -307,7 +307,7 @@ class Container:
     def stats_engine(self) -> "StatsEngine":
         """Motor de estadísticas."""
         if self._stats_engine is None:
-            from backend.app.services.stats_engine import StatsEngine
+            from backend.analytics.services.stats_engine import StatsEngine
             self._stats_engine = StatsEngine(trade_state=self.trade_state)
         return self._stats_engine
     
@@ -315,7 +315,7 @@ class Container:
     def trade_simulator(self) -> "TradeSimulator":
         """Simulador de trades (paper trading)."""
         if self._trade_simulator is None:
-            from backend.app.services.trade_simulator import TradeSimulator
+            from backend.trading.services.trade_simulator import TradeSimulator
             self._trade_simulator = TradeSimulator(
                 trade_state=self.trade_state,
                 stats_engine=self.stats_engine
@@ -326,7 +326,7 @@ class Container:
     def tf_aggregator(self) -> "TimeframeAggregator":
         """Agregador de timeframes."""
         if self._tf_aggregator is None:
-            from backend.app.services.timeframe_aggregator import TimeframeAggregator
+            from backend.market_data.services.tf_aggregator import TimeframeAggregator
             self._tf_aggregator = TimeframeAggregator(
                 timeframes=self.legacy_settings.available_timeframes
             )
@@ -336,7 +336,7 @@ class Container:
     def deriv_client(self) -> "DerivClient":
         """Cliente de conexión a Deriv."""
         if self._deriv_client is None:
-            from backend.app.infrastructure.deriv_client import DerivClient
+            from backend.market_data.infrastructure.deriv_client import DerivClient
             self._deriv_client = DerivClient(event_bus=self.event_bus)
         return self._deriv_client
     
@@ -362,7 +362,7 @@ class Container:
     def ws_manager(self) -> "WebSocketManager":
         """WebSocket manager para broadcast a frontend."""
         if self._ws_manager is None:
-            from backend.app.api.websocket_manager import WebSocketManager
+            from backend.presentation.websocket.websocket_manager import WebSocketManager
             self._ws_manager = WebSocketManager(event_bus=self.event_bus)
         return self._ws_manager
     
