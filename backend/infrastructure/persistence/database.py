@@ -151,12 +151,16 @@ class DatabaseManager:
 # ─── Singleton global ────────────────────────────────────────────────────
 _db_manager: Optional[DatabaseManager] = None
 
+# Instancia global para compatibilidad con código legacy
+db_manager: DatabaseManager = None  # Se inicializa lazy
+
 
 def get_db_manager(settings: Optional[Settings] = None) -> DatabaseManager:
     """Obtiene la instancia global del DatabaseManager."""
-    global _db_manager
+    global _db_manager, db_manager
     if _db_manager is None:
         _db_manager = DatabaseManager(settings)
+        db_manager = _db_manager
     return _db_manager
 
 
