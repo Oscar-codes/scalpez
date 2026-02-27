@@ -113,34 +113,52 @@ class SymbolIndicatorState:
 
 class IndicatorStateManager:
     """
-    Gestor centralizado del estado de indicadores para todos los símbolos.
+    Gestor centralizado del estado de indicadores.
 
-    Acceso: indicator_state.get_or_create(symbol) → SymbolIndicatorState
+    Soporta clave simple (symbol) para compatibilidad y clave
+    compuesta (symbol:timeframe) para multi-timeframe.
+
+    Acceso:
+        indicator_state.get_or_create("R_100")        → velas base 5s
+        indicator_state.get_or_create("R_100:5m")      → velas 5m
     """
 
     def __init__(self) -> None:
         self._states: Dict[str, SymbolIndicatorState] = {}
 
-    def get_or_create(self, symbol: str) -> SymbolIndicatorState:
-        """Obtener estado de indicadores de un símbolo; crearlo si no existe."""
-        if symbol not in self._states:
-            self._states[symbol] = SymbolIndicatorState(symbol=symbol)
+    @staticmethod
+    def _make_key(symbol: str, timeframe: str | None = None) -> str:
+        """Generar clave de estado. Si timeframe=None, usa solo symbol."""
+        if timeframe is None:
+            return symbol
+        return f"{symbol}:{timeframe}"
+
+    def get_or_create(
+        self, symbol: str, timeframe: str | None = None,
+    ) -> SymbolIndicatorState:
+        """Obtener estado de indicadores; crearlo si no existe."""
+        key = self._make_key(symbol, timeframe)
+        if key not in self._states:
+            self._states[key] = SymbolIndicatorState(symbol=key)
             logger.info(
                 "IndicatorState creado para '%s' (warmup requerido: %d velas)",
-                symbol,
+                key,
                 MIN_WARMUP,
             )
-        return self._states[symbol]
+        return self._states[key]
 
-    def get(self, symbol: str) -> Optional[SymbolIndicatorState]:
+    def get(
+        self, symbol: str, timeframe: str | None = None,
+    ) -> Optional[SymbolIndicatorState]:
         """Obtener estado sin crear. Retorna None si no existe."""
-        return self._states.get(symbol)
+        key = self._make_key(symbol, timeframe)
+        return self._states.get(key)
 
     def snapshot(self) -> dict:
         """Snapshot de todos los indicadores para diagnóstico / API."""
         return {
-            symbol: state.to_dict()
-            for symbol, state in self._states.items()
+            key: state.to_dict()
+            for key, state in self._states.items()
         }
 
     def get_all_symbols(self) -> list[str]:

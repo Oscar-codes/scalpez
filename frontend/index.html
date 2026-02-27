@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuantPulse — Real-Time Trading Dashboard</title>
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+
+  <!-- Google Fonts: Inter + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+
+  <!-- QuantPulse Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       APP CONTAINER — CSS Grid Layout
+       ═══════════════════════════════════════════════════════════ -->
+  <div class="app-container">
+
+    <!-- ── HEADER ──────────────────────────────────────────── -->
+    <header class="app-header">
+      <div class="brand">
+        QuantPulse<span class="brand-version">v0.8</span>
+      </div>
+      <div id="symbol-selector">
+        <!-- SymbolSelector component mounts here -->
+      </div>
+      <div id="tf-selector" class="tf-selector-container">
+        <!-- TimeframeSelector component mounts here -->
+      </div>
+    </header>
+
+    <!-- ── MAIN: Chart ─────────────────────────────────────── -->
+    <main class="app-main">
+      <div class="chart-container">
+        <span class="chart-label" id="chart-label">Candlestick · 5s</span>
+        <canvas id="chart-canvas"></canvas>
+      </div>
+    </main>
+
+    <!-- ── SIDEBAR: Signal + Stats + Equity ────────────────── -->
+    <aside class="app-sidebar">
+
+      <!-- Signal Panel (component manages its own DOM) -->
+      <div id="signal-panel" class="panel-card"></div>
+
+      <!-- Stats Panel (component manages its own DOM) -->
+      <div id="stats-panel" class="panel-card"></div>
+
+      <!-- Equity Curve (component only draws on canvas) -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <span>Equity Curve</span>
+          <span id="equity-pnl" class="equity-label">--</span>
+        </div>
+        <div class="equity-container">
+          <canvas id="equity-canvas"></canvas>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ── BOTTOM: Trade Table (component manages its own DOM) ── -->
+    <section class="app-bottom panel-card" id="trade-table"></section>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCRIPTS — ES6 Modules
+       ═══════════════════════════════════════════════════════════ -->
+  <script type="module" src="js/app.js"></script>
+
+</body>
+</html>

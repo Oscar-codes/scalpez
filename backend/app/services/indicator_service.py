@@ -128,9 +128,13 @@ class IndicatorService:
     #  PUNTO DE ENTRADA PRINCIPAL
     # ════════════════════════════════════════════════════════════════
 
-    def update(self, candle: Candle) -> Optional[dict]:
+    def update(self, candle: Candle, timeframe: str | None = None) -> Optional[dict]:
         """
         Actualizar TODOS los indicadores para un símbolo dado una vela cerrada.
+
+        Args:
+            candle: Vela cerrada (frozen=True).
+            timeframe: Timeframe de la vela (e.g. "5m"). None = vela base 5s.
 
         Complejidad: O(1) amortizado.
         - Durante warm-up: O(1) append + posible O(N) seed (una sola vez).
@@ -139,7 +143,7 @@ class IndicatorService:
         Retorna:
             dict con valores actualizados si warm-up completo, None si no.
         """
-        state = self._state_manager.get_or_create(candle.symbol)
+        state = self._state_manager.get_or_create(candle.symbol, timeframe)
         close = candle.close
 
         # ── Incrementar contador de warm-up ──
@@ -356,12 +360,19 @@ class IndicatorService:
         rs = avg_gain / avg_loss
         return 100.0 - (100.0 / (1.0 + rs))
 
-    def get_indicators(self, symbol: str) -> Optional[dict]:
-        """Obtener snapshot de indicadores para un símbolo."""
-        state = self._state_manager.get(symbol)
+    def get_indicators(
+        self, symbol: str, timeframe: str | None = None,
+    ) -> Optional[dict]:
+        """Obtener snapshot de indicadores para un símbolo (y timeframe)."""
+        state = self._state_manager.get(symbol, timeframe)
         if state is None:
             return None
-        return state.to_dict()
+        result = state.to_dict()
+        # Asegurar que el campo symbol sea el symbol real (sin TF suffix)
+        if timeframe and ":" in result.get("symbol", ""):
+            result["symbol"] = symbol
+            result["timeframe"] = timeframe
+        return result
 
     def get_all_indicators(self) -> dict:
         """Snapshot de todos los indicadores para API."""

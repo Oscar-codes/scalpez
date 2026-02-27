@@ -44,7 +44,11 @@ class SymbolState:
     symbol: str
     last_tick: Optional[Tick] = None
     last_price: float = 0.0
+    # Velas base (5s) — se mantienen para el CandleBuilder original
     candles: deque = field(default_factory=lambda: deque(maxlen=settings.max_candles_buffer))
+
+    # Velas por timeframe: { "5m": deque, "15m": deque, ... }
+    tf_candles: Dict[str, deque] = field(default_factory=dict)
 
     # Placeholder para trade activo (Fase futura)
     active_trade: Optional[dict] = None
@@ -53,11 +57,18 @@ class SymbolState:
     total_ticks: int = 0
     total_candles: int = 0
 
+    def get_tf_candles(self, timeframe: str) -> deque:
+        """Obtener buffer de velas de un timeframe, creando si no existe."""
+        if timeframe not in self.tf_candles:
+            self.tf_candles[timeframe] = deque(maxlen=settings.max_candles_buffer)
+        return self.tf_candles[timeframe]
+
 
 class MarketStateManager:
     """
     Gestor centralizado del estado de mercado para todos los símbolos.
 
+    Soporta velas base (5s) y velas de múltiples timeframes.
     Acceso: market_state[symbol] → SymbolState
     """
 
@@ -81,19 +92,37 @@ class MarketStateManager:
 
     def add_candle(self, candle: Candle) -> None:
         """
-        Añadir una vela cerrada al buffer.
+        Añadir una vela base cerrada (5s) al buffer.
         deque(maxlen=N) descarta automáticamente la más antigua si se excede.
         """
         state = self.get_or_create(candle.symbol)
         state.candles.append(candle)
         state.total_candles += 1
 
+    def add_tf_candle(self, candle: Candle, timeframe: str) -> None:
+        """
+        Añadir una vela cerrada de un timeframe superior.
+        """
+        state = self.get_or_create(candle.symbol)
+        buf = state.get_tf_candles(timeframe)
+        buf.append(candle)
+
     def get_candles(self, symbol: str, count: int | None = None) -> list[Candle]:
-        """Obtener las últimas N velas de un símbolo (o todas si count=None)."""
+        """Obtener las últimas N velas base (5s) de un símbolo."""
         state = self.get_or_create(symbol)
         if count is None:
             return list(state.candles)
         return list(state.candles)[-count:]
+
+    def get_tf_candles(
+        self, symbol: str, timeframe: str, count: int | None = None,
+    ) -> list[Candle]:
+        """Obtener las últimas N velas de un timeframe de un símbolo."""
+        state = self.get_or_create(symbol)
+        buf = state.get_tf_candles(timeframe)
+        if count is None:
+            return list(buf)
+        return list(buf)[-count:]
 
     def get_last_price(self, symbol: str) -> float:
         """Precio más reciente de un símbolo."""
@@ -106,13 +135,17 @@ class MarketStateManager:
 
     def snapshot(self) -> dict:
         """Snapshot completo para diagnóstico / API."""
-        return {
-            symbol: {
+        result = {}
+        for symbol, s in self._states.items():
+            tf_info = {
+                tf: len(buf) for tf, buf in s.tf_candles.items()
+            }
+            result[symbol] = {
                 "last_price": s.last_price,
                 "total_ticks": s.total_ticks,
                 "total_candles": s.total_candles,
                 "candles_in_buffer": len(s.candles),
+                "tf_candles": tf_info,
                 "has_active_trade": s.active_trade is not None,
             }
-            for symbol, s in self._states.items()
-        }
+        return result

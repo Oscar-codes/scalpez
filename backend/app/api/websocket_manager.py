@@ -39,7 +39,12 @@ logger = get_logger("ws_manager")
 
 TICK_PROCESSED_TOPIC = "tick_processed"
 CANDLE_TOPIC = "candle"
+TF_CANDLE_TOPIC = "tf_candle"
+TF_INDICATORS_TOPIC = "tf_indicators"
 INDICATORS_TOPIC = "indicators_updated"
+SIGNAL_TOPIC = "signal"
+TRADE_OPENED_TOPIC = "trade_opened"
+TRADE_CLOSED_TOPIC = "trade_closed"
 
 
 class WebSocketManager:
@@ -51,15 +56,30 @@ class WebSocketManager:
         self._broadcast_tasks: list[asyncio.Task] = []
 
     async def start(self) -> None:
-        """Lanzar loops de broadcast para ticks, velas e indicadores."""
+        """Lanzar loops de broadcast para todos los tópicos."""
         tick_queue = await self._event_bus.subscribe(
             TICK_PROCESSED_TOPIC, "ws_broadcast_tick"
         )
         candle_queue = await self._event_bus.subscribe(
             CANDLE_TOPIC, "ws_broadcast_candle"
         )
+        tf_candle_queue = await self._event_bus.subscribe(
+            TF_CANDLE_TOPIC, "ws_broadcast_tf_candle"
+        )
+        tf_indicators_queue = await self._event_bus.subscribe(
+            TF_INDICATORS_TOPIC, "ws_broadcast_tf_indicators"
+        )
         indicators_queue = await self._event_bus.subscribe(
             INDICATORS_TOPIC, "ws_broadcast_indicators"
+        )
+        signal_queue = await self._event_bus.subscribe(
+            SIGNAL_TOPIC, "ws_broadcast_signal"
+        )
+        trade_opened_queue = await self._event_bus.subscribe(
+            TRADE_OPENED_TOPIC, "ws_broadcast_trade_opened"
+        )
+        trade_closed_queue = await self._event_bus.subscribe(
+            TRADE_CLOSED_TOPIC, "ws_broadcast_trade_closed"
         )
 
         self._broadcast_tasks = [
@@ -72,12 +92,33 @@ class WebSocketManager:
                 name="ws-broadcast-candle",
             ),
             asyncio.create_task(
+                self._broadcast_loop(tf_candle_queue, "tf_candle"),
+                name="ws-broadcast-tf-candle",
+            ),
+            asyncio.create_task(
+                self._broadcast_loop(tf_indicators_queue, "tf_indicators"),
+                name="ws-broadcast-tf-indicators",
+            ),
+            asyncio.create_task(
                 self._broadcast_loop(indicators_queue, "indicators"),
                 name="ws-broadcast-indicators",
             ),
+            asyncio.create_task(
+                self._broadcast_loop(signal_queue, "signal"),
+                name="ws-broadcast-signal",
+            ),
+            asyncio.create_task(
+                self._broadcast_loop(trade_opened_queue, "trade_opened"),
+                name="ws-broadcast-trade-opened",
+            ),
+            asyncio.create_task(
+                self._broadcast_loop(trade_closed_queue, "trade_closed"),
+                name="ws-broadcast-trade-closed",
+            ),
         ]
         logger.info(
-            "WebSocketManager iniciado – broadcast loops activos para tick, candle e indicators"
+            "WebSocketManager iniciado – broadcast loops para tick, candle, "
+            "tf_candle, tf_indicators, indicators, signal, trade_opened, trade_closed"
         )
 
     async def stop(self) -> None:
@@ -121,21 +162,19 @@ class WebSocketManager:
                     continue
 
                 # Serializar el evento
-                if isinstance(data, Tick):
-                    payload = json.dumps({
-                        "type": event_type,
-                        "data": data.to_dict(),
-                    })
-                elif isinstance(data, Candle):
-                    payload = json.dumps({
-                        "type": event_type,
-                        "data": data.to_dict(),
-                    })
+                # Usa to_dict() si el objeto lo tiene (Tick, Candle, Signal),
+                # dict directo para indicadores, str como fallback.
+                if hasattr(data, 'to_dict'):
+                    payload_data = data.to_dict()
+                elif isinstance(data, dict):
+                    payload_data = data
                 else:
-                    payload = json.dumps({
-                        "type": event_type,
-                        "data": str(data),
-                    })
+                    payload_data = str(data)
+
+                payload = json.dumps({
+                    "type": event_type,
+                    "data": payload_data,
+                })
 
                 # Broadcast a todos los clientes en paralelo
                 disconnected: list[WebSocket] = []

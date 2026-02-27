@@ -1,0 +1,1009 @@
+/**
+ * QuantPulse – Professional Dark Mode Financial Dashboard
+ * =========================================================
+ * Colores extraídos de TradingView / Bloomberg Terminal aesthetic.
+ *
+ * PALETA:
+ *   --bg-primary:    #0d1117   (fondo principal)
+ *   --bg-secondary:  #161b22   (cards, paneles)
+ *   --bg-tertiary:   #1c2333   (hover, header)
+ *   --border:        #30363d   (bordes sutiles)
+ *   --text-primary:  #e6edf3   (texto principal)
+ *   --text-secondary:#8b949e   (texto secundario)
+ *   --green:         #26a69a   (profit, BUY)
+ *   --red:           #ef5350   (loss, SELL)
+ *   --blue:          #42a5f5   (info, EMA 9)
+ *   --orange:        #ffa726   (warning, EMA 21)
+ *   --yellow:        #ffca28   (neutral, pending)
+ *   --purple:        #ab47bc   (señal activa accent)
+ */
+
+/* ── CSS Variables ───────────────────────────────────────────── */
+:root {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #1c2333;
+  --bg-card: #161b22;
+  --border: #30363d;
+  --border-hover: #484f58;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --green: #26a69a;
+  --green-bg: rgba(38, 166, 154, 0.1);
+  --green-border: rgba(38, 166, 154, 0.3);
+  --red: #ef5350;
+  --red-bg: rgba(239, 83, 80, 0.1);
+  --red-border: rgba(239, 83, 80, 0.3);
+  --blue: #42a5f5;
+  --blue-bg: rgba(66, 165, 245, 0.1);
+  --orange: #ffa726;
+  --orange-bg: rgba(255, 167, 38, 0.1);
+  --yellow: #ffca28;
+  --yellow-bg: rgba(255, 202, 40, 0.1);
+  --purple: #ab47bc;
+  --purple-bg: rgba(171, 71, 188, 0.1);
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --radius: 8px;
+  --radius-sm: 4px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --transition: 0.15s ease;
+}
+
+/* ── Reset & Base ────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ── Layout ──────────────────────────────────────────────────── */
+.app-container {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 1fr 320px;
+  grid-template-areas:
+    "header  header"
+    "main    sidebar"
+    "bottom  bottom";
+  gap: 8px;
+  padding: 8px;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+.app-header {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.app-main {
+  grid-area: main;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-sidebar {
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.app-bottom {
+  grid-area: bottom;
+  min-height: 180px;
+  max-height: 260px;
+}
+
+/* ── Scrollbar custom ────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
+/* ── Header / Brand ──────────────────────────────────────────── */
+.brand {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--blue);
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+
+.brand-version {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+/* ── Symbol Selector ─────────────────────────────────────────── */
+#symbol-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.conn-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background var(--transition);
+}
+
+.conn-dot.connected {
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+
+.conn-dot.connecting {
+  background: var(--yellow);
+  box-shadow: 0 0 6px var(--yellow);
+  animation: pulse 1.5s infinite;
+}
+
+.conn-dot.disconnected {
+  background: var(--red);
+  box-shadow: 0 0 6px var(--red);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.symbol-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.symbol-btn:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.symbol-btn.active {
+  border-color: var(--blue);
+  color: var(--text-primary);
+  background: var(--blue-bg);
+}
+
+.symbol-name {
+  font-weight: 600;
+}
+
+.symbol-price {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  min-width: 50px;
+  text-align: right;
+}
+
+.symbol-delta {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  min-width: 16px;
+}
+
+.symbol-delta.up {
+  color: var(--green);
+}
+
+.symbol-delta.down {
+  color: var(--red);
+}
+
+/* ── Timeframe Selector ──────────────────────────────────────── */
+.tf-selector-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;  /* empujar a la derecha */
+}
+
+.tf-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 4px;
+}
+
+.tf-btn {
+  padding: 4px 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.tf-btn:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.tf-btn.active {
+  border-color: var(--purple);
+  color: var(--text-primary);
+  background: var(--purple-bg);
+  font-weight: 700;
+}
+
+/* ── Chart Container ─────────────────────────────────────────── */
+.chart-container {
+  flex: 1;
+  min-height: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: relative;
+}
+
+.chart-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.chart-label {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Panel Card (genérico) ───────────────────────────────────── */
+.panel-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.panel-body {
+  padding: 10px 12px;
+}
+
+/* ── Signal Panel ────────────────────────────────────────────── */
+#signal-panel {
+  min-height: 120px;
+}
+
+.signal-panel {
+  padding: 10px 12px;
+}
+
+.signal-panel .signal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.signal-panel .signal-header h3 {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.signal-time {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.signal-content {
+  padding: 10px 12px;
+}
+
+.trade-section {
+  padding: 0 12px 10px;
+}
+
+.trade-section h4 {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin: 0 0 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.trade-content {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.signal-buy { color: var(--green); }
+.signal-sell { color: var(--red); }
+
+.signal-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.signal-row,
+.trade-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.signal-row .label,
+.trade-row .label {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.signal-row .value,
+.trade-row .value {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.signal-row .value.sl,
+.trade-row .value .sl {
+  color: var(--red);
+}
+
+.signal-row .value.tp,
+.trade-row .value .tp {
+  color: var(--green);
+}
+
+.value.profit { color: var(--green); }
+.value.loss { color: var(--red); }
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+td.profit { color: var(--green); }
+td.loss { color: var(--red); }
+td.muted { color: var(--text-muted); }
+
+.signal-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.signal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.signal-type {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.signal-type.buy {
+  color: var(--green);
+  text-shadow: 0 0 12px rgba(38, 166, 154, 0.3);
+}
+
+.signal-type.sell {
+  color: var(--red);
+  text-shadow: 0 0 12px rgba(239, 83, 80, 0.3);
+}
+
+.signal-rr {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--blue);
+  background: var(--blue-bg);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.signal-levels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.signal-level {
+  text-align: center;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.signal-level .label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.signal-level .value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.signal-level.entry {
+  background: var(--blue-bg);
+}
+
+.signal-level.sl {
+  background: var(--red-bg);
+}
+
+.signal-level.tp {
+  background: var(--green-bg);
+}
+
+.signal-conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* ── Conditions / Badges ─────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.badge-condition {
+  background: var(--purple-bg);
+  color: var(--purple);
+  border: 1px solid rgba(171, 71, 188, 0.25);
+}
+
+.badge-profit {
+  background: var(--green-bg);
+  color: var(--green);
+  border: 1px solid var(--green-border);
+}
+
+.badge-loss {
+  background: var(--red-bg);
+  color: var(--red);
+  border: 1px solid var(--red-border);
+}
+
+.badge-expired {
+  background: var(--yellow-bg);
+  color: var(--yellow);
+  border: 1px solid rgba(255, 202, 40, 0.25);
+}
+
+.badge-open {
+  background: var(--blue-bg);
+  color: var(--blue);
+  border: 1px solid rgba(66, 165, 245, 0.25);
+}
+
+.badge-pending {
+  background: var(--orange-bg);
+  color: var(--orange);
+  border: 1px solid rgba(255, 167, 38, 0.25);
+}
+
+/* ── Active Trade Section ────────────────────────────────────── */
+.trade-active {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.trade-active-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.trade-active-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.trade-pnl {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.trade-pnl.positive {
+  color: var(--green);
+}
+
+.trade-pnl.negative {
+  color: var(--red);
+}
+
+.trade-pnl.neutral {
+  color: var(--text-secondary);
+}
+
+.trade-info-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ── Stats Panel ─────────────────────────────────────────────── */
+#stats-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.stat-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  transition: border-color var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-card:hover {
+  border-color: var(--border-hover);
+}
+
+.stat-card.positive {
+  border-left: 3px solid var(--green);
+}
+
+.stat-card.negative {
+  border-left: 3px solid var(--red);
+}
+
+.stat-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.stat-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stat-label {
+  font-size: 0.65rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.stat-value.positive {
+  color: var(--green);
+}
+
+.stat-value.negative {
+  color: var(--red);
+}
+
+.stat-value.neutral {
+  color: var(--text-secondary);
+}
+
+.stats-counters {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  margin-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.counter-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.counter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.counter-dot.win { background: var(--green); }
+.counter-dot.loss { background: var(--red); }
+.counter-dot.expired { background: var(--yellow); }
+
+/* ── Equity Curve ────────────────────────────────────────────── */
+.equity-container {
+  height: 100px;
+  position: relative;
+}
+
+.equity-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.equity-label {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.equity-label.positive { color: var(--green); }
+.equity-label.negative { color: var(--red); }
+
+/* ── Trade Table ─────────────────────────────────────────────── */
+.trade-table-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.trade-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.trade-table-header h3 {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.trade-table-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.trade-table-footer {
+  padding: 4px 12px;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.trade-table-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-select,
+.form-select-sm {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  outline: none;
+}
+
+.filter-select:focus,
+.form-select-sm:focus {
+  border-color: var(--blue);
+}
+
+.trade-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+table.trade-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+table.trade-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+table.trade-table th {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 6px 8px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+table.trade-table td {
+  padding: 5px 8px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(48, 54, 61, 0.4);
+}
+
+table.trade-table tbody tr {
+  transition: background var(--transition);
+}
+
+table.trade-table tbody tr:hover {
+  background: var(--bg-tertiary);
+}
+
+table.trade-table .pnl-cell.positive { color: var(--green); font-weight: 600; }
+table.trade-table .pnl-cell.negative { color: var(--red); font-weight: 600; }
+
+table.trade-table .type-cell.buy { color: var(--green); }
+table.trade-table .type-cell.sell { color: var(--red); }
+
+/* ── Utility Classes ─────────────────────────────────────────── */
+.text-green { color: var(--green); }
+.text-red { color: var(--red); }
+.text-blue { color: var(--blue); }
+.text-orange { color: var(--orange); }
+.text-yellow { color: var(--yellow); }
+.text-muted { color: var(--text-muted); }
+.text-mono { font-family: var(--font-mono); }
+.text-center { text-align: center; }
+.font-bold { font-weight: 700; }
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.no-data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .app-container {
+    grid-template-columns: 1fr 280px;
+  }
+}
+
+@media (max-width: 960px) {
+  .app-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    grid-template-areas:
+      "header"
+      "main"
+      "sidebar"
+      "bottom";
+    height: auto;
+    max-height: none;
+    overflow: auto;
+  }
+
+  .app-main {
+    min-height: 400px;
+  }
+
+  .app-sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow-y: visible;
+  }
+
+  .app-sidebar > * {
+    flex: 1;
+    min-width: 280px;
+  }
+
+  .app-bottom {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 640px) {
+  html { font-size: 12px; }
+
+  .app-header {
+    flex-wrap: wrap;
+  }
+
+  #symbol-selector {
+    flex-wrap: wrap;
+  }
+
+  .signal-levels {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Animations ──────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slideIn {
+  animation: slideInRight 0.2s ease-out;
+}
+
+/* ── Trade row flash (nuevo trade) ───────────────────────────── */
+@keyframes rowFlash {
+  0% { background: var(--blue-bg); }
+  100% { background: transparent; }
+}
+
+table.trade-table tbody tr.new-row {
+  animation: rowFlash 1.5s ease-out;
+}
