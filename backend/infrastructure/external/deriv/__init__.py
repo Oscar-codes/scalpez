@@ -1,1 +1,0 @@
-"""Deriv WebSocket client."""

@@ -126,7 +126,7 @@ class Container:
         if not self.settings.ml_enabled:
             return None
         if self._ml_predictor is None:
-            from backend.infrastructure.ml.inference.model_inference import ModelInference
+            from backend.ml.model_inference import ModelInference
             self._ml_predictor = ModelInference(self.settings)
         return self._ml_predictor
     

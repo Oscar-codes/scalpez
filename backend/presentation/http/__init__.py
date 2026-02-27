@@ -1,1 +1,0 @@
-"""HTTP Presentation - FastAPI routes."""

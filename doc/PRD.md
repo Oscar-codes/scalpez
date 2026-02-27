@@ -207,7 +207,14 @@ ESTADO DE IMPLEMENTACIÓN (v1.0)
 - Average Win / Average Loss
 - Average RR Real
 - Equity Curve
-- Max Drawdown
+- Max Drawdown# Entrenar modelo
+python -m backend.ml.train --walk-forward --compare
+
+# En código
+from backend.ml.model_inference import ModelInference
+inference = ModelInference()
+inference.load_model("models/v1.0.0_xxx/model.pkl")
+signal_engine.enable_ml(inference, threshold=0.55)
 - Best/Worst Trade
 - Recovery Factor
 
