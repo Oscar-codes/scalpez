@@ -1,0 +1,763 @@
+/**
+ * QuantPulse – Component Styles
+ * ================================
+ * Estilos para paneles, tablas, selectores y elementos de UI.
+ */
+
+/* ══════════════════════════════════════════════════════════════
+   Panels (Cards)
+   ══════════════════════════════════════════════════════════════ */
+
+.panel {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--panel-radius);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px var(--panel-padding);
+  border-bottom: 1px solid var(--color-border);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  flex-shrink: 0;
+}
+
+.panel-body {
+  flex: 1;
+  padding: var(--panel-padding);
+  overflow: auto;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-mini {
+  background: var(--color-surface);
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.btn-mini:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Chart Container
+   ══════════════════════════════════════════════════════════════ */
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+}
+
+.chart-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.chart-label {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  background: rgba(13, 17, 23, 0.8);
+  padding: 4px 8px;
+  border-radius: 4px;
+  z-index: 10;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Symbol Selector
+   ══════════════════════════════════════════════════════════════ */
+
+.symbol-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  transition: all var(--transition-fast);
+}
+
+.symbol-btn:hover {
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border-light);
+  color: var(--color-text);
+}
+
+.symbol-btn.active {
+  background: var(--color-primary);
+  background: linear-gradient(135deg, rgba(88, 166, 255, 0.2), rgba(88, 166, 255, 0.1));
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.symbol-name {
+  font-weight: 600;
+}
+
+.symbol-price {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.symbol-delta {
+  font-size: 0.7rem;
+}
+
+.symbol-delta.up { color: var(--color-bullish); }
+.symbol-delta.down { color: var(--color-bearish); }
+
+.price-flash {
+  animation: flash 0.2s ease;
+}
+
+@keyframes flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Connection Indicator */
+.conn-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  margin-right: 8px;
+}
+
+.conn-dot.connected {
+  background: var(--color-success);
+}
+
+.conn-dot.disconnected {
+  background: var(--color-danger);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Timeframe Selector
+   ══════════════════════════════════════════════════════════════ */
+
+.timeframe-selector {
+  display: flex;
+  gap: 4px;
+}
+
+.tf-btn {
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.tf-btn:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.tf-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Signal Panel
+   ══════════════════════════════════════════════════════════════ */
+
+.signal-panel {
+  padding: var(--panel-padding);
+}
+
+.signal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.signal-header h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.signal-time {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+
+.signal-content {
+  padding: 12px;
+  background: var(--color-surface);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.signal-content.signal-empty {
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.signal-type {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.signal-type.signal-buy { color: var(--color-bullish); }
+.signal-type.signal-sell { color: var(--color-bearish); }
+
+.signal-icon {
+  font-size: 1.25rem;
+}
+
+.signal-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.signal-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.signal-row .label {
+  color: var(--color-text-muted);
+}
+
+.signal-row .value {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.signal-row .value.sl { color: var(--color-bearish); }
+.signal-row .value.tp { color: var(--color-bullish); }
+
+.signal-conditions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.condition-badge {
+  padding: 2px 8px;
+  background: var(--color-bg-tertiary);
+  border-radius: 4px;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+/* Trade Section */
+.trade-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.trade-section h4 {
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.trade-content {
+  padding: 10px;
+  background: var(--color-surface);
+  border-radius: 6px;
+}
+
+.trade-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.trade-row .label {
+  color: var(--color-text-muted);
+}
+
+.trade-row .pnl.positive { color: var(--color-bullish); }
+.trade-row .pnl.negative { color: var(--color-bearish); }
+
+
+/* ══════════════════════════════════════════════════════════════
+   Stats Panel
+   ══════════════════════════════════════════════════════════════ */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--color-surface);
+  border-radius: 6px;
+}
+
+.stat-icon {
+  font-size: 1rem;
+}
+
+.stat-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.stats-counters {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+}
+
+.counter-item.profit { color: var(--color-bullish); }
+.counter-item.loss { color: var(--color-bearish); }
+
+
+/* ══════════════════════════════════════════════════════════════
+   Equity Curve
+   ══════════════════════════════════════════════════════════════ */
+
+.equity-container {
+  position: relative;
+  height: 100px;
+  min-height: 80px;
+}
+
+.equity-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.equity-label {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Trade Table
+   ══════════════════════════════════════════════════════════════ */
+
+.trade-table-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.trade-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px var(--panel-padding);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.trade-table-header h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.trade-filters select {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  font-size: 0.75rem;
+  padding: 4px 8px;
+}
+
+.trade-table-scroll {
+  flex: 1;
+  overflow: auto;
+  max-height: 200px;
+}
+
+.trade-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.trade-table th {
+  text-align: left;
+  padding: 8px 10px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+}
+
+.trade-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.trade-table tr:hover td {
+  background: var(--color-surface);
+}
+
+.symbol-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--color-bg-tertiary);
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.status-badge.status-win {
+  background: var(--color-bullish-bg);
+  color: var(--color-bullish);
+}
+
+.status-badge.status-loss {
+  background: var(--color-bearish-bg);
+  color: var(--color-bearish);
+}
+
+.status-badge.status-open {
+  background: rgba(88, 166, 255, 0.15);
+  color: var(--color-primary);
+}
+
+.condition-mini {
+  display: inline-block;
+  padding: 1px 4px;
+  background: var(--color-bg-tertiary);
+  border-radius: 3px;
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  margin-right: 2px;
+}
+
+.conditions {
+  max-width: 150px;
+  overflow: hidden;
+}
+
+.trade-table-footer {
+  padding: 8px var(--panel-padding);
+  border-top: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Form Elements
+   ══════════════════════════════════════════════════════════════ */
+
+.form-select {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.form-select-sm {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Settings Panel
+   ══════════════════════════════════════════════════════════════ */
+
+.settings-panel {
+  padding: var(--panel-padding);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.settings-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.settings-status.unsaved {
+  color: var(--color-warning);
+}
+
+.settings-status.saved {
+  color: var(--color-success);
+}
+
+.settings-status.error {
+  color: var(--color-danger);
+}
+
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-section {
+  padding: 12px;
+  background: var(--color-surface);
+  border-radius: 6px;
+}
+
+.settings-section h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--color-text);
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.settings-row:last-child {
+  margin-bottom: 0;
+}
+
+.settings-row label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.form-input {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  width: 80px;
+  text-align: right;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.settings-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all var(--transition-fast);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Modal
+   ══════════════════════════════════════════════════════════════ */
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  position: relative;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--panel-radius);
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  animation: modal-in 0.2s ease-out;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px var(--panel-padding);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.modal-close:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.modal-body {
+  flex: 1;
+  padding: var(--panel-padding);
+  overflow-y: auto;
+}

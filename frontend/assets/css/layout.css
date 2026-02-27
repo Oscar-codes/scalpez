@@ -1,0 +1,324 @@
+/**
+ * QuantPulse – Layout Styles
+ * ============================
+ * Dashboard layout: Sidebar + Navbar + Grid principal.
+ */
+
+/* ══════════════════════════════════════════════════════════════
+   App Wrapper
+   ══════════════════════════════════════════════════════════════ */
+
+.app-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Sidebar
+   ══════════════════════════════════════════════════════════════ */
+
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  height: 100vh;
+  background: var(--color-bg-secondary);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  transition: width var(--transition-normal), min-width var(--transition-normal);
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed);
+  min-width: var(--sidebar-collapsed);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+  height: var(--navbar-height);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.brand-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.brand-version {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.sidebar.collapsed .brand-name,
+.sidebar.collapsed .brand-version {
+  display: none;
+}
+
+.sidebar-toggle {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 1.25rem;
+  padding: 4px;
+}
+
+.sidebar-toggle:hover {
+  color: var(--color-text);
+}
+
+/* Sidebar Navigation */
+.sidebar-nav {
+  flex: 1;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.nav-item:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.nav-item.active {
+  background: var(--color-primary);
+  background: linear-gradient(135deg, rgba(88, 166, 255, 0.2), rgba(88, 166, 255, 0.1));
+  color: var(--color-primary);
+}
+
+.nav-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.nav-label {
+  white-space: nowrap;
+}
+
+.sidebar.collapsed .nav-label {
+  display: none;
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.conn-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.conn-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  flex-shrink: 0;
+}
+
+.conn-status.connected .conn-dot {
+  background: var(--color-success);
+}
+
+.sidebar.collapsed .conn-label {
+  display: none;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Main Wrapper
+   ══════════════════════════════════════════════════════════════ */
+
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: var(--sidebar-width);
+  transition: margin-left var(--transition-normal);
+  min-height: 100vh;
+}
+
+.sidebar.collapsed ~ .main-wrapper {
+  margin-left: var(--sidebar-collapsed);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Top Navbar
+   ══════════════════════════════════════════════════════════════ */
+
+.top-navbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  height: var(--navbar-height);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.navbar-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navbar-actions {
+  margin-left: auto;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 8px;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.btn-icon:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Dashboard Grid
+   ══════════════════════════════════════════════════════════════ */
+
+.dashboard-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 2fr 1fr auto;
+  grid-template-areas:
+    "chart signal"
+    "chart stats"
+    "table table";
+  gap: 12px;
+  padding: 12px;
+  overflow: auto;
+}
+
+.grid-item {
+  min-width: 0;
+  min-height: 0;
+}
+
+.chart-area {
+  grid-area: chart;
+}
+
+.signal-area {
+  grid-area: signal;
+}
+
+.stats-area {
+  grid-area: stats;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.equity-area {
+  grid-area: stats;
+  /* Se apila con stats */
+}
+
+.table-area {
+  grid-area: table;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Responsive Adjustments
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1.5fr 1fr auto;
+    grid-template-areas:
+      "chart chart"
+      "signal stats"
+      "table table";
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: var(--sidebar-collapsed);
+    min-width: var(--sidebar-collapsed);
+  }
+  
+  .sidebar .brand-name,
+  .sidebar .brand-version,
+  .sidebar .nav-label,
+  .sidebar .conn-label {
+    display: none;
+  }
+  
+  .main-wrapper {
+    margin-left: var(--sidebar-collapsed);
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    grid-template-areas:
+      "chart"
+      "signal"
+      "stats"
+      "table";
+  }
+  
+  .chart-area {
+    min-height: 300px;
+  }
+}

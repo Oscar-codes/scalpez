@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuantPulse — Real-Time Trading Dashboard</title>
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+
+  <!-- Google Fonts: Inter + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="../assets/css/bootstrap.min.css">
+
+  <!-- QuantPulse Styles -->
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/layout.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body class="theme-dark">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       APP LAYOUT — Dashboard Pattern (Sidebar + Navbar + Main)
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="app" class="app-wrapper">
+
+    <!-- ── SIDEBAR (collapsible) ─────────────────────────────── -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <span class="brand-icon">📊</span>
+          <span class="brand-name">QuantPulse</span>
+          <span class="brand-version">v1.0</span>
+        </div>
+        <button id="sidebar-toggle" class="sidebar-toggle" title="Toggle Sidebar">
+          <span>≡</span>
+        </button>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-view="dashboard">
+          <span class="nav-icon">📈</span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+        <a href="#" class="nav-item" data-view="analysis">
+          <span class="nav-icon">🔬</span>
+          <span class="nav-label">Analysis</span>
+        </a>
+        <a href="#" class="nav-item" data-view="history">
+          <span class="nav-icon">📋</span>
+          <span class="nav-label">History</span>
+        </a>
+        <a href="#" class="nav-item" data-view="settings">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-label">Settings</span>
+        </a>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <span id="conn-status" class="conn-status disconnected">
+          <span class="conn-dot"></span>
+          <span class="conn-label">Disconnected</span>
+        </span>
+      </div>
+    </aside>
+
+    <!-- ── MAIN CONTENT ──────────────────────────────────────── -->
+    <div class="main-wrapper">
+
+      <!-- Top Navbar -->
+      <header class="top-navbar">
+        <div id="symbol-selector" class="navbar-section">
+          <!-- SymbolSelector component mounts here -->
+        </div>
+        
+        <div id="timeframe-selector" class="navbar-section">
+          <!-- TimeframeSelector component mounts here -->
+        </div>
+        
+        <div class="navbar-section navbar-actions">
+          <button id="btn-refresh" class="btn-icon" title="Refresh Data">🔄</button>
+          <button id="btn-mute" class="btn-icon" title="Toggle Sound">🔊</button>
+          <button id="btn-fullscreen" class="btn-icon" title="Fullscreen">⛶</button>
+        </div>
+      </header>
+
+      <!-- Dashboard Grid -->
+      <main class="dashboard-grid">
+
+        <!-- Chart Area (spans 2 columns) -->
+        <section class="grid-item chart-area">
+          <div class="panel">
+            <div class="panel-header">
+              <span id="chart-label">Candlestick · 5s</span>
+              <div class="panel-actions">
+                <button class="btn-mini" title="Zoom In">+</button>
+                <button class="btn-mini" title="Zoom Out">−</button>
+              </div>
+            </div>
+            <div class="panel-body chart-container">
+              <canvas id="main-chart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- Signal Panel -->
+        <section class="grid-item signal-area">
+          <div id="signal-panel" class="panel">
+            <!-- SignalPanel component mounts here -->
+          </div>
+        </section>
+
+        <!-- Stats Panel -->
+        <section class="grid-item stats-area">
+          <div id="stats-panel" class="panel">
+            <!-- StatsPanel component mounts here -->
+          </div>
+        </section>
+
+        <!-- Equity Curve -->
+        <section class="grid-item equity-area">
+          <div class="panel">
+            <div class="panel-header">
+              <span>Equity Curve</span>
+              <span id="equity-pnl" class="equity-label">--</span>
+            </div>
+            <div class="panel-body equity-container">
+              <canvas id="equity-curve"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- Trade Table (spans full width) -->
+        <section class="grid-item table-area">
+          <div id="trade-table" class="panel">
+            <!-- TradeTable component mounts here -->
+          </div>
+        </section>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- Error Container -->
+  <div id="error-container" class="error-toast" style="display:none;"></div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay" style="display:none;">
+    <div class="spinner"></div>
+    <span>Loading...</span>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal" style="display:none;">
+    <div class="modal-backdrop" onclick="document.getElementById('settings-modal').style.display='none'"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⚙️ Configuración</h2>
+        <button class="modal-close" onclick="document.getElementById('settings-modal').style.display='none'">✕</button>
+      </div>
+      <div id="settings-panel" class="modal-body">
+        <!-- SettingsPanel component mounts here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCRIPTS — ES6 Modules
+       ═══════════════════════════════════════════════════════════ -->
+  <script type="module" src="../src/app.js"></script>
+
+</body>
+</html>
