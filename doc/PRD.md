@@ -127,7 +127,7 @@ Mostrar estadísticas:
 No des teoría innecesaria. Entrega código estructurado y profesional.
 
 =====================================
-ESTADO DE IMPLEMENTACIÓN (v0.8)
+ESTADO DE IMPLEMENTACIÓN (v1.0)
 =====================================
 Última actualización: 27 de febrero de 2026
 
@@ -211,6 +211,87 @@ ESTADO DE IMPLEMENTACIÓN (v0.8)
 - Best/Worst Trade
 - Recovery Factor
 
+**7) PERSISTENCIA MySQL (FASE 8 - Preparación ML)**
+
+│ Componente                    │ Estado │ Descripción                                                      │
+├─────────────────────────────────┼────────┼───────────────────────────────────────────────────────────────────┤
+│ SQL Schema (InnoDB)           │ ✅     │ 6 tablas: symbols, signals, trades, trade_features, snapshots   │
+│ ORM Models (SQLAlchemy 2.0)   │ ✅     │ Modelos async con métodos from_domain/to_domain                 │
+│ SignalRepository              │ ✅     │ CRUD async + analytics (distribución, promedios)                │
+│ TradeRepository               │ ✅     │ CRUD async + get_ml_dataset() para supervised learning          │
+│ Migration System              │ ✅     │ Runner CLI con --reset, --seed, --check                         │
+│ Integración Lifespan          │ ✅     │ Inicialización condicional (db_enabled config)                  │
+│ TradeFeatures Table           │ ✅     │ 25+ features técnicas para entrenamiento ML                     │
+
+**Schema de Base de Datos:**
+
+```sql
+symbols          -- Catálogo de instrumentos (R_100, R_10, etc.)
+signals          -- Histórico de señales generadas (condiciones JSON)
+trades           -- Trades simulados con lifecycle completo
+trade_features   -- Features ML: indicators, volatility, momentum, context
+performance_snapshots -- Snapshots periódicos para equity curve histórica
+candles          -- Velas OHLCV (particionada por mes)
+```
+
+**Features ML Disponibles (trade_features):**
+- Indicadores: ema9, ema21, rsi14, ema_distance, rsi_zone
+- Volatilidad: atr14, volatility_ratio, range_percentile
+- Momentum: momentum_5, momentum_10, rsi_divergence
+- Contexto: sr_distance, time_since_sr_touch, consolidation_bars
+- Volume: volume_ratio, vwap_distance
+- Multi-timeframe: higher_tf_trend, higher_tf_rsi
+
+**8) MACHINE LEARNING (FASE 9)**
+
+│ Componente                    │ Estado │ Descripción                                                      │
+├─────────────────────────────────┼────────┼───────────────────────────────────────────────────────────────────┤
+│ MLConfig                      │ ✅     │ Configuración centralizada (thresholds, hyperparams, features)  │
+│ DatasetBuilder                │ ✅     │ MySQL → DataFrame con time-split y normalization                │
+│ ModelTrainer                  │ ✅     │ XGBoost/LightGBM con walk-forward validation                    │
+│ ModelInference                │ ✅     │ Predicción en tiempo real O(1ms)                                │
+│ ModelRegistry                 │ ✅     │ Versionado, rollback, limpieza automática                       │
+│ SignalEngine + ML             │ ✅     │ Filtrado de señales por probabilidad                            │
+│ Training CLI                  │ ✅     │ python -m backend.ml.train --walk-forward --compare             │
+
+**Arquitectura ML:**
+
+```
+backend/ml/
+├── __init__.py         # Exports
+├── config.py           # MLConfig (dataclass)
+├── dataset_builder.py  # MySQL → Dataset supervisado
+├── model_trainer.py    # Entrenamiento + validación temporal
+├── model_inference.py  # Predicciones en tiempo real
+├── model_registry.py   # Versionado de modelos
+├── train.py            # CLI de entrenamiento
+└── models/             # Modelos persistidos (.pkl)
+    └── v1.0.0_YYYYMMDD_HHMMSS/
+        ├── model.pkl
+        ├── scaler.pkl
+        └── metadata.json
+```
+
+**Prevención de Problemas ML:**
+- **Data Leakage:** Time-based split (train pasado, test futuro)
+- **Sobreajuste:** Early stopping + regularización L1/L2 + max_depth=4
+- **Validación:** Walk-forward CV (5 folds) simula backtesting real
+- **Estabilidad:** Modelo solo se activa si PF > 1.2 y WR > 45%
+
+**Integración con Signal Engine:**
+```python
+# SignalEngine evalúa condiciones → genera señal candidata
+if signal and ml_enabled:
+    features = ml_inference.extract_features(candle, indicators, sr_context)
+    result = ml_inference.predict(features, threshold=0.55)
+    if not result.should_emit:
+        signal = None  # Filtrada por ML
+```
+
+**Métricas de Evaluación:**
+- Clásicas: ROC-AUC, Precision, Recall, F1
+- Negocio: Profit Factor, Win Rate filtrado, Expectancy
+
 ------------------------------------
 🔄 EN PROGRESO
 ------------------------------------
@@ -226,9 +307,9 @@ ESTADO DE IMPLEMENTACIÓN (v0.8)
 
 │ Feature                       │ Prioridad │ Descripción                                                   │
 ├─────────────────────────────────┼───────────┼────────────────────────────────────────────────────────────────┤
-│ Persistencia (SQLite/Postgres)│ Media     │ Guardar trades/señales para análisis histórico                │
 │ Patrones clásicos             │ Baja      │ Doble techo/suelo (opcional, las 4 condiciones dan buen edge) │
-│ Backtesting module            │ Baja      │ Evaluar estrategia sobre datos históricos                     │
+│ Backtesting module            │ Media     │ Evaluar estrategia sobre datos históricos                     │
+│ SHAP Explainability           │ Media     │ Visualización de feature importance con SHAP                  │
 │ Automatización real           │ Futura    │ Ejecución real de órdenes vía API Deriv                       │
 │ Notificaciones push           │ Baja      │ Alertas via Telegram/Discord                                  │
 
@@ -240,6 +321,19 @@ ESTADO DE IMPLEMENTACIÓN (v0.8)
 scalpez/
 ├── backend/
 │   ├── main.py                 # Entry point + composición
+│   ├── db/
+│   │   ├── migrate.py          # Runner de migraciones CLI
+│   │   └── migrations/
+│   │       └── 001_initial_schema.sql  # Schema MySQL
+│   ├── ml/                     # Machine Learning module
+│   │   ├── __init__.py
+│   │   ├── config.py           # MLConfig (dataclass)
+│   │   ├── dataset_builder.py  # MySQL → Dataset
+│   │   ├── model_trainer.py    # XGBoost/LightGBM trainer
+│   │   ├── model_inference.py  # Predicción realtime
+│   │   ├── model_registry.py   # Versionado de modelos
+│   │   ├── train.py            # CLI entrenamiento
+│   │   └── models/             # Modelos persistidos
 │   └── app/
 │       ├── api/                # HTTP routes + WebSocket
 │       ├── application/        # Use cases (orchestración)
@@ -248,8 +342,17 @@ scalpez/
 │       │   └── entities/
 │       │       └── value_objects/
 │       ├── infrastructure/     # DerivClient + EventBus + DB
-│       │   └── repositories/
-│       ├── services/           # Business logic (indicators, signals, etc.)
+│       │   ├── database.py     # DatabaseManager async singleton
+│       │   ├── models/         # SQLAlchemy ORM models
+│       │   │   ├── signal.py
+│       │   │   ├── trade.py
+│       │   │   ├── trade_features.py
+│       │   │   ├── symbol.py
+│       │   │   └── performance.py
+│       │   └── repositories/   # Async CRUD
+│       │       ├── signal_repository.py
+│       │       └── trade_repository.py
+│       ├── services/           # Business logic (indicators, signals, ML)
 │       └── state/              # State managers (market, indicators, trades)
 ├── frontend/
 │   ├── index.html              # Dashboard SPA
@@ -272,6 +375,9 @@ scalpez/
 cd backend
 pip install -r ../requirements.txt
 uvicorn main:app --reload --host 0.0.0.0 --port 8888
+
+# ML Training
+python -m backend.ml.train --walk-forward --compare
 
 # Frontend
 # Abrir http://localhost:8888 en el navegador

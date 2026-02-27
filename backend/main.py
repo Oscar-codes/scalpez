@@ -40,6 +40,7 @@ from backend.app.core.logging import setup_logging, get_logger
 from backend.app.core.settings import settings
 from backend.app.infrastructure.event_bus import EventBus
 from backend.app.infrastructure.deriv_client import DerivClient
+from backend.app.infrastructure.database import db_manager
 from backend.app.services.candle_builder import CandleBuilder
 from backend.app.services.indicator_service import IndicatorService
 from backend.app.services.support_resistance_service import SupportResistanceService
@@ -131,6 +132,14 @@ async def lifespan(app: FastAPI):
     logger.info("  Stats Engine: 12 metricas cuantitativas O(n), cache lazy")
     logger.info("=" * 60)
 
+    # Inicializar base de datos (opcional)
+    if settings.db_enabled:
+        await db_manager.initialize()
+        logger.info("  Database: MySQL conectada (%s@%s/%s)",
+                    settings.db_user, settings.db_host, settings.db_name)
+    else:
+        logger.info("  Database: Deshabilitada (db_enabled=False)")
+
     # Inyectar dependencias al router
     init_routes(
         ws_manager, market_state, deriv_client,
@@ -158,6 +167,11 @@ async def lifespan(app: FastAPI):
 
     # ── SHUTDOWN ──
     logger.info("Iniciando shutdown...")
+
+    # Cerrar conexión a base de datos
+    if settings.db_enabled:
+        await db_manager.close()
+        logger.info("  Database: Conexión cerrada")
 
     await deriv_client.stop()
     await process_tick.stop()

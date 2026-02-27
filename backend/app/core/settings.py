@@ -110,6 +110,17 @@ class Settings(BaseSettings):
     port: int = Field(default=8888)
     debug: bool = Field(default=False)
 
+    # ─── MySQL Database ─────────────────────────────────────────────────
+    db_host: str = Field(default="localhost", description="MySQL host")
+    db_port: int = Field(default=3306, description="MySQL port")
+    db_user: str = Field(default="quantpulse", description="MySQL username")
+    db_password: str = Field(default="quantpulse_secret", description="MySQL password")
+    db_name: str = Field(default="quantpulse", description="MySQL database name")
+    db_echo: bool = Field(default=False, description="Loguear queries SQL (debug)")
+    db_pool_size: int = Field(default=5, description="Conexiones en el pool")
+    db_max_overflow: int = Field(default=10, description="Conexiones extra en picos")
+    db_enabled: bool = Field(default=False, description="Habilitar persistencia MySQL")
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",

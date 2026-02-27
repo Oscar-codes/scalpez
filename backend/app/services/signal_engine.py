@@ -123,12 +123,20 @@ from __future__ import annotations
 
 import time
 from collections import deque
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 from backend.app.core.logging import get_logger
 from backend.app.domain.entities.candle import Candle
 from backend.app.domain.entities.signal import Signal
 from backend.app.services.support_resistance_service import SupportResistanceService
+
+# Importación condicional de ML (opcional)
+try:
+    from backend.ml.model_inference import ModelInference
+    HAS_ML = True
+except ImportError:
+    HAS_ML = False
+    ModelInference = None
 
 logger = get_logger("signal_engine")
 
@@ -166,6 +174,9 @@ class SignalEngine:
         min_sl_pct: float = 0.0002,
         cooldown_candles: int = 3,
         candle_interval: int = 5,
+        ml_inference: Optional[Any] = None,  # ModelInference when ML available
+        ml_threshold: float = 0.55,
+        ml_enabled: bool = False,
     ) -> None:
         self._sr_service = sr_service
         self._min_confirmations = min_confirmations
@@ -177,6 +188,12 @@ class SignalEngine:
         self._candle_interval = candle_interval
         self._cooldown_candles = cooldown_candles
         self._cooldown_seconds = cooldown_candles * candle_interval
+        
+        # ML Integration (opcional)
+        self._ml_inference = ml_inference
+        self._ml_threshold = ml_threshold
+        self._ml_enabled = ml_enabled and HAS_ML and ml_inference is not None
+        self._ml_filtered = 0  # Señales filtradas por ML
 
         # ── Estado interno por símbolo ─────────────────────────────
         # Indicadores de la vela ANTERIOR para detectar cruces/giros.
@@ -319,6 +336,12 @@ class SignalEngine:
         signal = self._compute_risk_and_generate(
             candle, signal_type, conditions, symbol, avg_range,
         )
+
+        # ── 8. Filtro ML (opcional) ────────────────────────────────
+        if signal is not None and self._ml_enabled:
+            signal = self._apply_ml_filter(
+                signal, candle, indicators, symbol,
+            )
 
         if signal is not None:
             self._last_signal_ts[symbol] = candle.timestamp
@@ -664,15 +687,144 @@ class SignalEngine:
     @property
     def stats(self) -> dict:
         """Estadísticas del motor de señales para monitoring."""
-        return {
+        base_stats = {
             "total_evaluated": self._total_evaluated,
             "total_signals": self._total_signals,
             "signals_buy": self._signals_by_type.get("BUY", 0),
             "signals_sell": self._signals_by_type.get("SELL", 0),
             "filtered_consolidation": self._total_filtered_consolidation,
             "filtered_rr": self._total_filtered_rr,
+            "filtered_ml": self._ml_filtered,
             "signal_rate": (
                 f"{self._total_signals}/{self._total_evaluated}"
                 if self._total_evaluated > 0 else "N/A"
             ),
         }
+        
+        # Agregar estadísticas ML si está habilitado
+        if self._ml_enabled and self._ml_inference is not None:
+            ml_stats = self._ml_inference.get_stats()
+            base_stats["ml_stats"] = ml_stats
+        
+        return base_stats
+
+    # ════════════════════════════════════════════════════════════════
+    #  INTEGRACIÓN ML
+    # ════════════════════════════════════════════════════════════════
+
+    def _apply_ml_filter(
+        self,
+        signal: Signal,
+        candle: Candle,
+        indicators: dict,
+        symbol: str,
+    ) -> Optional[Signal]:
+        """
+        Filtra señal usando modelo ML.
+        
+        FLUJO:
+          1. Extraer features del contexto actual
+          2. Predecir probabilidad de éxito
+          3. Si P >= threshold → emitir señal
+          4. Si P < threshold → descartar silenciosamente
+        
+        CÓMO ESTO MEJORA EL EDGE:
+          El modelo aprendió qué combinaciones de features
+          generan mayor probabilidad de PROFIT histórico.
+          Filtramos señales con baja P para mejorar win rate
+          sin afectar las señales de alta calidad.
+        """
+        if self._ml_inference is None:
+            return signal
+        
+        try:
+            # Construir contexto S/R para features
+            price = candle.close
+            sr_context = {
+                "nearest_support": self._sr_service.get_nearest_support(symbol, price) or price,
+                "nearest_resistance": self._sr_service.get_nearest_resistance(symbol, price) or price,
+                "consolidation_bars": 0,  # TODO: extraer de sr_service
+            }
+            
+            # Extraer features
+            features = self._ml_inference.extract_features(
+                candle=candle,
+                indicators=indicators,
+                sr_context=sr_context,
+                signal_type=signal.signal_type,
+                planned_rr=signal.rr,
+            )
+            
+            # Predecir
+            result = self._ml_inference.predict(
+                features=features,
+                threshold=self._ml_threshold,
+            )
+            
+            if result.should_emit:
+                # Señal pasa el filtro ML
+                logger.debug(
+                    "ML: Señal %s [%s] APROBADA (P=%.2f%% >= %.0f%%)",
+                    signal.signal_type, symbol,
+                    result.probability * 100, self._ml_threshold * 100,
+                )
+                # Agregar metadata ML a la señal
+                signal = self._enrich_signal_with_ml(signal, result)
+                return signal
+            else:
+                # Señal filtrada por ML
+                self._ml_filtered += 1
+                logger.info(
+                    "ML: Señal %s [%s] FILTRADA (P=%.2f%% < %.0f%%)",
+                    signal.signal_type, symbol,
+                    result.probability * 100, self._ml_threshold * 100,
+                )
+                return None
+                
+        except Exception as e:
+            # En caso de error ML → emitir señal (fail-safe)
+            logger.warning("Error en filtro ML: %s. Emitiendo señal.", e)
+            return signal
+    
+    def _enrich_signal_with_ml(
+        self,
+        signal: Signal,
+        ml_result,
+    ) -> Signal:
+        """
+        Enriquece la señal con metadata ML.
+        
+        NOTA: Signal es inmutable (frozen dataclass), se crea una nueva
+        con campos adicionales si los soporta, o se mantiene igual.
+        """
+        # Por ahora solo loguear la probabilidad
+        # En una versión futura podríamos agregar campos extras
+        return signal
+    
+    def enable_ml(
+        self,
+        inference: Any,  # ModelInference instance
+        threshold: float = None,
+    ):
+        """Habilita filtrado ML en runtime."""
+        self._ml_inference = inference
+        if threshold is not None:
+            self._ml_threshold = threshold
+        self._ml_enabled = HAS_ML and inference is not None
+        
+        if self._ml_enabled:
+            logger.info(
+                "ML habilitado: threshold=%.2f%%, version=%s",
+                self._ml_threshold * 100,
+                inference.model_version if inference else "none",
+            )
+    
+    def disable_ml(self):
+        """Deshabilita filtrado ML."""
+        self._ml_enabled = False
+        logger.info("ML deshabilitado")
+    
+    def set_ml_threshold(self, threshold: float):
+        """Ajusta threshold ML en runtime."""
+        self._ml_threshold = max(0.40, min(threshold, 0.80))
+        logger.info("ML threshold: %.2f%%", self._ml_threshold * 100)
