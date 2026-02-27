@@ -87,6 +87,12 @@ async def lifespan(app: FastAPI):
         await db_manager.initialize()
         logger.info("  Database: MySQL conectada (%s@%s/%s)",
                     settings.db_user, settings.db_host, settings.db_name)
+        
+        # Iniciar PersistenceListener para guardar señales y trades
+        from backend.infrastructure.persistence.persistence_listener import PersistenceListener
+        persistence_listener = PersistenceListener(container.event_bus)
+        await persistence_listener.start()
+        container._persistence_listener = persistence_listener  # Guardar referencia
     else:
         logger.info("  Database: Deshabilitada (db_enabled=False)")
 
@@ -117,6 +123,11 @@ async def lifespan(app: FastAPI):
 
     # ── SHUTDOWN ──
     logger.info("Iniciando shutdown...")
+
+    # Detener PersistenceListener
+    if settings.db_enabled and hasattr(container, '_persistence_listener'):
+        await container._persistence_listener.stop()
+        logger.info("  PersistenceListener: Detenido")
 
     # Cerrar conexión a base de datos
     if settings.db_enabled:
