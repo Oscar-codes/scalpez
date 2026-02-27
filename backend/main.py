@@ -38,68 +38,17 @@ from fastapi.responses import FileResponse
 
 from backend.app.core.logging import setup_logging, get_logger
 from backend.app.core.settings import settings
-from backend.app.infrastructure.event_bus import EventBus
-from backend.app.infrastructure.deriv_client import DerivClient
 from backend.app.infrastructure.database import db_manager
-from backend.app.services.candle_builder import CandleBuilder
-from backend.app.services.indicator_service import IndicatorService
-from backend.app.services.support_resistance_service import SupportResistanceService
-from backend.app.services.signal_engine import SignalEngine
-from backend.app.services.trade_simulator import TradeSimulator
-from backend.app.services.stats_engine import StatsEngine
-from backend.app.services.timeframe_aggregator import TimeframeAggregator
-from backend.app.state.market_state import MarketStateManager
-from backend.app.state.indicator_state import IndicatorStateManager
-from backend.app.state.trade_state import TradeStateManager
-from backend.app.application.process_tick_usecase import ProcessTickUseCase
-from backend.app.api.websocket_manager import WebSocketManager
 from backend.app.api.routes import router, init_routes
+from backend.container import get_container, init_container
 
 # ─── Logging ────────────────────────────────────────────────────────────
 setup_logging()
 logger = get_logger("main")
 
-# ─── Instancias globales (composición en el root) ──────────────────────
-event_bus = EventBus(max_queue_size=settings.event_bus_max_queue_size)
-market_state = MarketStateManager()
-indicator_state = IndicatorStateManager()
-candle_builder = CandleBuilder(interval=settings.candle_interval_seconds)
-indicator_service = IndicatorService(state_manager=indicator_state)
-sr_service = SupportResistanceService(
-    max_levels=settings.signal_sr_max_levels,
-    sr_tolerance_pct=settings.signal_sr_tolerance_pct,
-    breakout_candle_mult=settings.signal_breakout_candle_mult,
-    consolidation_candles=settings.signal_consolidation_candles,
-    consolidation_atr_mult=settings.signal_consolidation_atr_mult,
-)
-signal_engine = SignalEngine(
-    sr_service=sr_service,
-    min_confirmations=settings.signal_min_confirmations,
-    rr_ratio=settings.signal_rr_ratio,
-    min_rr=settings.signal_min_rr,
-    rsi_oversold=settings.signal_rsi_oversold,
-    rsi_overbought=settings.signal_rsi_overbought,
-    min_sl_pct=settings.signal_min_sl_pct,
-    cooldown_candles=settings.signal_cooldown_candles,
-    candle_interval=settings.candle_interval_seconds,
-)
-trade_state = TradeStateManager()
-stats_engine = StatsEngine(trade_state=trade_state)
-trade_simulator = TradeSimulator(trade_state=trade_state, stats_engine=stats_engine)
-tf_aggregator = TimeframeAggregator(timeframes=settings.available_timeframes)
-deriv_client = DerivClient(event_bus=event_bus)
-process_tick = ProcessTickUseCase(
-    event_bus=event_bus,
-    candle_builder=candle_builder,
-    market_state=market_state,
-    indicator_service=indicator_service,
-    sr_service=sr_service,
-    signal_engine=signal_engine,
-    trade_simulator=trade_simulator,
-    tf_aggregator=tf_aggregator,
-    active_timeframe=settings.default_timeframe,
-)
-ws_manager = WebSocketManager(event_bus=event_bus)
+# ─── Contenedor de Dependencias ─────────────────────────────────────────
+# Todas las instancias se obtienen del container (DI)
+container = init_container()
 
 # Task references para lifecycle
 _background_tasks: list[asyncio.Task] = []
@@ -140,26 +89,26 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("  Database: Deshabilitada (db_enabled=False)")
 
-    # Inyectar dependencias al router
+    # Inyectar dependencias al router (desde container)
     init_routes(
-        ws_manager, market_state, deriv_client,
-        indicator_service, signal_engine, sr_service,
-        trade_simulator, trade_state, stats_engine,
-        process_tick=process_tick,
-        tf_aggregator=tf_aggregator,
+        container.ws_manager, container.market_state, container.deriv_client,
+        container.indicator_service, container.signal_engine, container.sr_service,
+        container.trade_simulator, container.trade_state, container.stats_engine,
+        process_tick=container.legacy_process_tick,
+        tf_aggregator=container.tf_aggregator,
     )
 
     # Iniciar WebSocket Manager (broadcast loops)
-    await ws_manager.start()
+    await container.ws_manager.start()
 
     # Iniciar ProcessTickUseCase como background task
     tick_task = asyncio.create_task(
-        process_tick.start(), name="process-tick-usecase"
+        container.legacy_process_tick.start(), name="process-tick-usecase"
     )
     _background_tasks.append(tick_task)
 
     # Iniciar DerivClient (conexión a Deriv)
-    await deriv_client.start()
+    await container.deriv_client.start()
 
     logger.info("✓ Todos los componentes iniciados correctamente")
 
@@ -173,9 +122,9 @@ async def lifespan(app: FastAPI):
         await db_manager.close()
         logger.info("  Database: Conexión cerrada")
 
-    await deriv_client.stop()
-    await process_tick.stop()
-    await ws_manager.stop()
+    await container.deriv_client.stop()
+    await container.legacy_process_tick.stop()
+    await container.ws_manager.stop()
 
     # Cancelar background tasks
     for task in _background_tasks:
@@ -186,7 +135,7 @@ async def lifespan(app: FastAPI):
             except asyncio.CancelledError:
                 pass
 
-    await event_bus.unsubscribe_all()
+    await container.event_bus.unsubscribe_all()
     logger.info("✓ Shutdown completo")
 
 

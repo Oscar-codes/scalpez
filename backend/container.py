@@ -6,10 +6,12 @@ que gestiona todas las instancias de servicios, repositorios y casos de uso.
 
 Clean Architecture: Este contenedor vive en la capa más externa y es el único
 lugar donde se crean dependencias concretas.
+
+NOTA: Incluye servicios legacy (backend.app) para transición gradual.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, TYPE_CHECKING
 from functools import lru_cache
 
 # Domain
@@ -26,6 +28,23 @@ from backend.application.ports.ml_predictor import IMLPredictor
 
 # Shared
 from backend.shared.config.settings import Settings
+
+# Legacy imports (para transición)
+if TYPE_CHECKING:
+    from backend.app.infrastructure.event_bus import EventBus
+    from backend.app.state.market_state import MarketStateManager
+    from backend.app.state.indicator_state import IndicatorStateManager
+    from backend.app.state.trade_state import TradeStateManager
+    from backend.app.services.candle_builder import CandleBuilder
+    from backend.app.services.indicator_service import IndicatorService
+    from backend.app.services.support_resistance_service import SupportResistanceService
+    from backend.app.services.signal_engine import SignalEngine
+    from backend.app.services.trade_simulator import TradeSimulator
+    from backend.app.services.stats_engine import StatsEngine
+    from backend.app.services.timeframe_aggregator import TimeframeAggregator
+    from backend.app.infrastructure.deriv_client import DerivClient
+    from backend.app.application.process_tick_usecase import ProcessTickUseCase as LegacyProcessTickUseCase
+    from backend.app.api.websocket_manager import WebSocketManager
 
 
 @dataclass
@@ -57,6 +76,23 @@ class Container:
     
     # Cache de instancias
     _instances: Dict[str, Any] = field(default_factory=dict)
+    
+    # ==================== Legacy Services (transición) ====================
+    # Estos servicios son de backend.app y se irán migrando gradualmente
+    _event_bus: Optional[Any] = None
+    _market_state: Optional[Any] = None
+    _indicator_state: Optional[Any] = None
+    _trade_state: Optional[Any] = None
+    _candle_builder: Optional[Any] = None
+    _indicator_service: Optional[Any] = None
+    _sr_service: Optional[Any] = None
+    _signal_engine: Optional[Any] = None
+    _trade_simulator: Optional[Any] = None
+    _stats_engine: Optional[Any] = None
+    _tf_aggregator: Optional[Any] = None
+    _deriv_client: Optional[Any] = None
+    _legacy_process_tick: Optional[Any] = None
+    _ws_manager: Optional[Any] = None
     
     # ==================== Domain Services ====================
     
@@ -172,10 +208,169 @@ class Container:
             signal_repository=self.signal_repository
         )
     
+    # ==================== Legacy Services (transición) ====================
+    # Estos servicios son de backend.app y se irán migrando a bounded contexts
+    
+    @property
+    def legacy_settings(self):
+        """Settings legacy de backend.app.core."""
+        from backend.app.core.settings import settings
+        return settings
+    
+    @property
+    def event_bus(self) -> "EventBus":
+        """Event bus para comunicación entre componentes."""
+        if self._event_bus is None:
+            from backend.app.infrastructure.event_bus import EventBus
+            self._event_bus = EventBus(
+                max_queue_size=self.legacy_settings.event_bus_max_queue_size
+            )
+        return self._event_bus
+    
+    @property
+    def market_state(self) -> "MarketStateManager":
+        """Estado del mercado (velas, precios)."""
+        if self._market_state is None:
+            from backend.app.state.market_state import MarketStateManager
+            self._market_state = MarketStateManager()
+        return self._market_state
+    
+    @property
+    def indicator_state(self) -> "IndicatorStateManager":
+        """Estado de indicadores técnicos."""
+        if self._indicator_state is None:
+            from backend.app.state.indicator_state import IndicatorStateManager
+            self._indicator_state = IndicatorStateManager()
+        return self._indicator_state
+    
+    @property
+    def trade_state(self) -> "TradeStateManager":
+        """Estado de trades simulados."""
+        if self._trade_state is None:
+            from backend.app.state.trade_state import TradeStateManager
+            self._trade_state = TradeStateManager()
+        return self._trade_state
+    
+    @property
+    def candle_builder(self) -> "CandleBuilder":
+        """Constructor de velas desde ticks."""
+        if self._candle_builder is None:
+            from backend.app.services.candle_builder import CandleBuilder
+            self._candle_builder = CandleBuilder(
+                interval=self.legacy_settings.candle_interval_seconds
+            )
+        return self._candle_builder
+    
+    @property
+    def indicator_service(self) -> "IndicatorService":
+        """Servicio de cálculo de indicadores."""
+        if self._indicator_service is None:
+            from backend.app.services.indicator_service import IndicatorService
+            self._indicator_service = IndicatorService(
+                state_manager=self.indicator_state
+            )
+        return self._indicator_service
+    
+    @property
+    def sr_service(self) -> "SupportResistanceService":
+        """Servicio de soportes y resistencias."""
+        if self._sr_service is None:
+            from backend.app.services.support_resistance_service import SupportResistanceService
+            self._sr_service = SupportResistanceService(
+                max_levels=self.legacy_settings.signal_sr_max_levels,
+                sr_tolerance_pct=self.legacy_settings.signal_sr_tolerance_pct,
+                breakout_candle_mult=self.legacy_settings.signal_breakout_candle_mult,
+                consolidation_candles=self.legacy_settings.signal_consolidation_candles,
+                consolidation_atr_mult=self.legacy_settings.signal_consolidation_atr_mult,
+            )
+        return self._sr_service
+    
+    @property
+    def signal_engine(self) -> "SignalEngine":
+        """Motor de generación de señales."""
+        if self._signal_engine is None:
+            from backend.app.services.signal_engine import SignalEngine
+            self._signal_engine = SignalEngine(
+                sr_service=self.sr_service,
+                min_confirmations=self.legacy_settings.signal_min_confirmations,
+                rr_ratio=self.legacy_settings.signal_rr_ratio,
+                min_rr=self.legacy_settings.signal_min_rr,
+                rsi_oversold=self.legacy_settings.signal_rsi_oversold,
+                rsi_overbought=self.legacy_settings.signal_rsi_overbought,
+                min_sl_pct=self.legacy_settings.signal_min_sl_pct,
+                cooldown_candles=self.legacy_settings.signal_cooldown_candles,
+                candle_interval=self.legacy_settings.candle_interval_seconds,
+            )
+        return self._signal_engine
+    
+    @property
+    def stats_engine(self) -> "StatsEngine":
+        """Motor de estadísticas."""
+        if self._stats_engine is None:
+            from backend.app.services.stats_engine import StatsEngine
+            self._stats_engine = StatsEngine(trade_state=self.trade_state)
+        return self._stats_engine
+    
+    @property
+    def trade_simulator(self) -> "TradeSimulator":
+        """Simulador de trades (paper trading)."""
+        if self._trade_simulator is None:
+            from backend.app.services.trade_simulator import TradeSimulator
+            self._trade_simulator = TradeSimulator(
+                trade_state=self.trade_state,
+                stats_engine=self.stats_engine
+            )
+        return self._trade_simulator
+    
+    @property
+    def tf_aggregator(self) -> "TimeframeAggregator":
+        """Agregador de timeframes."""
+        if self._tf_aggregator is None:
+            from backend.app.services.timeframe_aggregator import TimeframeAggregator
+            self._tf_aggregator = TimeframeAggregator(
+                timeframes=self.legacy_settings.available_timeframes
+            )
+        return self._tf_aggregator
+    
+    @property
+    def deriv_client(self) -> "DerivClient":
+        """Cliente de conexión a Deriv."""
+        if self._deriv_client is None:
+            from backend.app.infrastructure.deriv_client import DerivClient
+            self._deriv_client = DerivClient(event_bus=self.event_bus)
+        return self._deriv_client
+    
+    @property
+    def legacy_process_tick(self) -> "LegacyProcessTickUseCase":
+        """ProcessTickUseCase legacy (backend.app)."""
+        if self._legacy_process_tick is None:
+            from backend.app.application.process_tick_usecase import ProcessTickUseCase
+            self._legacy_process_tick = ProcessTickUseCase(
+                event_bus=self.event_bus,
+                candle_builder=self.candle_builder,
+                market_state=self.market_state,
+                indicator_service=self.indicator_service,
+                sr_service=self.sr_service,
+                signal_engine=self.signal_engine,
+                trade_simulator=self.trade_simulator,
+                tf_aggregator=self.tf_aggregator,
+                active_timeframe=self.legacy_settings.default_timeframe,
+            )
+        return self._legacy_process_tick
+    
+    @property
+    def ws_manager(self) -> "WebSocketManager":
+        """WebSocket manager para broadcast a frontend."""
+        if self._ws_manager is None:
+            from backend.app.api.websocket_manager import WebSocketManager
+            self._ws_manager = WebSocketManager(event_bus=self.event_bus)
+        return self._ws_manager
+    
     # ==================== Lifecycle ====================
     
     def reset(self) -> None:
         """Resetea todas las instancias (útil para tests)."""
+        # Clean Architecture
         self._signal_repository = None
         self._trade_repository = None
         self._event_publisher = None
@@ -184,6 +379,21 @@ class Container:
         self._signal_rules = None
         self._risk_calculator = None
         self._indicator_calculator = None
+        # Legacy
+        self._event_bus = None
+        self._market_state = None
+        self._indicator_state = None
+        self._trade_state = None
+        self._candle_builder = None
+        self._indicator_service = None
+        self._sr_service = None
+        self._signal_engine = None
+        self._trade_simulator = None
+        self._stats_engine = None
+        self._tf_aggregator = None
+        self._deriv_client = None
+        self._legacy_process_tick = None
+        self._ws_manager = None
         self._instances.clear()
     
     def override(self, name: str, instance: Any) -> None:
