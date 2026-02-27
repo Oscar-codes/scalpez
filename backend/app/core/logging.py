@@ -1,35 +1,13 @@
 """
-QuantPulse – Logging configuration
-====================================
-Configura logging estructurado con formato legible para desarrollo
-y JSON-ready para producción futura.
+QuantPulse – Logging (DEPRECATED: use backend.shared.logging.logger)
+====================================================================
+Este archivo se mantiene por compatibilidad con imports legacy.
+La versión canónica está en backend/shared/logging/logger.py
+
+Todos los nuevos imports deben usar:
+    from backend.shared.logging.logger import setup_logging, get_logger
 """
 
-from __future__ import annotations
+from backend.shared.logging.logger import setup_logging, get_logger
 
-import logging
-import sys
-
-
-def setup_logging(level: int = logging.INFO) -> None:
-    """Configura el root logger una sola vez al arranque."""
-    fmt = (
-        "%(asctime)s | %(levelname)-8s | %(name)-30s | %(message)s"
-    )
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(logging.Formatter(fmt, datefmt="%Y-%m-%d %H:%M:%S"))
-
-    root = logging.getLogger()
-    # Evitar handlers duplicados si se llama más de una vez
-    if not root.handlers:
-        root.addHandler(handler)
-    root.setLevel(level)
-
-    # Silenciar librerías ruidosas
-    logging.getLogger("websockets").setLevel(logging.WARNING)
-    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
-
-
-def get_logger(name: str) -> logging.Logger:
-    """Fábrica de loggers con namespace prefijado."""
-    return logging.getLogger(f"quantpulse.{name}")
+__all__ = ["setup_logging", "get_logger"]
