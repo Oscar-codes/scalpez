@@ -247,6 +247,21 @@
 .signal-type.signal-buy { color: var(--color-bullish); }
 .signal-type.signal-sell { color: var(--color-bearish); }
 
+.ml-badge {
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 2px 6px;
+  background: rgba(88, 166, 255, 0.2);
+  color: var(--color-primary);
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+.ml-conf {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
 .signal-icon {
   font-size: 1.25rem;
 }

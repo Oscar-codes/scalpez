@@ -113,6 +113,7 @@ export class SignalPanel extends BaseComponent {
       <div class="signal-type ${typeClass}">
         <span class="signal-icon">${typeIcon}</span>
         <span class="signal-label">${signal.signal_type}</span>
+        ${signal.ml_probability ? `<span class="ml-badge" title="Probabilidad ML">🤖 ${(signal.ml_probability * 100).toFixed(0)}%</span>` : ''}
       </div>
       <div class="signal-details">
         <div class="signal-row">
@@ -129,11 +130,17 @@ export class SignalPanel extends BaseComponent {
         </div>
         <div class="signal-row">
           <span class="label">RR:</span>
-          <span class="value">${signal.risk_reward?.toFixed(2) || '--'}</span>
+          <span class="value">${signal.risk_reward?.toFixed(2) || signal.rr?.toFixed(2) || '--'}</span>
         </div>
+        ${signal.ml_probability ? `
+        <div class="signal-row">
+          <span class="label">ML Conf:</span>
+          <span class="value ml-conf">${(signal.ml_probability * 100).toFixed(1)}%</span>
+        </div>
+        ` : ''}
       </div>
       <div class="signal-conditions">
-        ${this._renderConditions(signal.conditions_met)}
+        ${this._renderConditions(signal.conditions_met || signal.conditions)}
       </div>
     `;
 

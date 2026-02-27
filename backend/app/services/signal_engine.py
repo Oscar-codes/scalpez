@@ -795,11 +795,24 @@ class SignalEngine:
         Enriquece la señal con metadata ML.
         
         NOTA: Signal es inmutable (frozen dataclass), se crea una nueva
-        con campos adicionales si los soporta, o se mantiene igual.
+        con el campo ml_probability poblado.
         """
-        # Por ahora solo loguear la probabilidad
-        # En una versión futura podríamos agregar campos extras
-        return signal
+        # Crear nueva señal con probabilidad ML
+        return Signal(
+            id=signal.id,
+            symbol=signal.symbol,
+            signal_type=signal.signal_type,
+            entry=signal.entry,
+            stop_loss=signal.stop_loss,
+            take_profit=signal.take_profit,
+            rr=signal.rr,
+            timestamp=signal.timestamp,
+            candle_timestamp=signal.candle_timestamp,
+            conditions=signal.conditions,
+            confidence=signal.confidence,
+            estimated_duration=signal.estimated_duration,
+            ml_probability=ml_result.probability,
+        )
     
     def enable_ml(
         self,

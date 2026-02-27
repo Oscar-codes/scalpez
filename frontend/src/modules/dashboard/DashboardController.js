@@ -109,19 +109,30 @@ export class DashboardController {
 
   async _loadInitialData() {
     const symbol = Store.getState().market?.currentSymbol || CONFIG.DEFAULT_SYMBOLS[0];
+    const timeframe = CONFIG.DEFAULT_TIMEFRAME;
     
-    // Cargar velas iniciales
-    try {
-      await ApiService.getCandles(symbol, CONFIG.DEFAULT_TIMEFRAME, 200);
-    } catch (error) {
-      console.warn('[Dashboard] Could not load initial candles:', error);
+    console.log('[Dashboard] Loading initial data...');
+    
+    // Cargar datos en PARALELO para acelerar arranque
+    const [candles, stats, signals] = await Promise.allSettled([
+      ApiService.getCandles(symbol, timeframe, 100),  // 100 velas en vez de 200
+      ApiService.getStats(),
+      ApiService.getRecentSignals(symbol, 10)
+    ]);
+    
+    // Log resultados
+    if (candles.status === 'fulfilled' && candles.value) {
+      console.log(`[Dashboard] Loaded ${candles.value.length} candles`);
+    } else {
+      console.warn('[Dashboard] Could not load candles:', candles.reason);
     }
     
-    // Cargar stats
-    try {
-      await ApiService.getStats();
-    } catch (error) {
-      console.warn('[Dashboard] Could not load initial stats:', error);
+    if (stats.status === 'fulfilled' && stats.value) {
+      console.log('[Dashboard] Stats loaded');
+    }
+    
+    if (signals.status === 'fulfilled' && signals.value) {
+      console.log(`[Dashboard] Loaded ${signals.value.length} recent signals`);
     }
   }
 

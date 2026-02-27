@@ -51,10 +51,11 @@ class Signal:
     conditions: tuple        # ("ema_cross", "rsi_reversal", ...) inmutable
     confidence: int          # len(conditions)
     estimated_duration: float = 0.0  # Duración estimada en segundos (INFORMATIVO)
+    ml_probability: float = None     # Probabilidad ML de éxito (0.0-1.0), None si ML deshabilitado
 
     def to_dict(self) -> dict:
         """Serialización para API / WebSocket / persistencia futura."""
-        return {
+        result = {
             "id": self.id,
             "symbol": self.symbol,
             "signal_type": self.signal_type,
@@ -68,6 +69,10 @@ class Signal:
             "confidence": self.confidence,
             "estimated_duration": round(self.estimated_duration, 1),
         }
+        # Incluir ml_probability solo si está disponible
+        if self.ml_probability is not None:
+            result["ml_probability"] = round(self.ml_probability, 4)
+        return result
 
     @staticmethod
     def generate_id() -> str:
