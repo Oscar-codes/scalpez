@@ -38,7 +38,7 @@ from fastapi.responses import FileResponse
 
 from backend.shared.logging.logger import setup_logging, get_logger
 from backend.shared.config.settings import settings
-from backend.app.infrastructure.database import db_manager
+from backend.app.infrastructure.database import get_db_manager
 from backend.presentation.api.routes import router, init_routes
 from backend.container import get_container, init_container
 
@@ -83,6 +83,7 @@ async def lifespan(app: FastAPI):
 
     # Inicializar base de datos (opcional)
     if settings.db_enabled:
+        db_manager = get_db_manager()
         await db_manager.initialize()
         logger.info("  Database: MySQL conectada (%s@%s/%s)",
                     settings.db_user, settings.db_host, settings.db_name)
@@ -119,6 +120,7 @@ async def lifespan(app: FastAPI):
 
     # Cerrar conexión a base de datos
     if settings.db_enabled:
+        db_manager = get_db_manager()
         await db_manager.close()
         logger.info("  Database: Conexión cerrada")
 
